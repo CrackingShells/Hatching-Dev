@@ -11,12 +11,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Prepare package data
-        id: package-data
-        run: |
-          echo "Preparing package data..."
-          # In a real scenario, you would process package data here
-          echo "message=hello from Hatching-Dev!" >> $GITHUB_OUTPUT
+      - name: Upload package as artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatch-package
+          path: arithmetic_pkg/
+          retention-days: 1
+          if-no-files-found: error
       
       - name: Generate GitHub App token
         id: generate-token
@@ -31,4 +33,11 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
           repository: CrackingShells/Hatch-Registry
           event-type: add-package
-          client-payload: '{"message": "${{ steps.package-data.outputs.message }}"}'
+          client-payload: |- 
+            {
+                "run_id": "${{ github.run_id }}",
+                "workflow_id": "${{ github.workflow }}",
+                "repository": "${{ github.repository }}",
+                "artifact_name": "hatch-package",
+                "package_name": "${{ github.event.inputs.package_path }}"
+            }
