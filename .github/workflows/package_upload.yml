@@ -24,10 +24,6 @@ jobs:
         with:
           app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
           private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
-          repositories: >-
-            ["CrackingShells/Hatch-Registry", "CrackingShells/Hatching-Dev"]
-          permissions: >-
-            {"contents": "write", "metadata": "read"}
 
       - name: Trigger Add Package Workflow in Registry
         uses: peter-evans/repository-dispatch@v3
