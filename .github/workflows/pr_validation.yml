@@ -1,0 +1,76 @@
+name: Package PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'packages/**'  # Adjust to match your actual package path structure
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      package_dirs: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Detect changed package directories
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          list-files: json
+          filters: |
+            changes:
+              - 'packages/*/**'
+  
+  validate-package:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.package_dirs != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package_dir: ${{ fromJSON(needs.detect-changes.outputs.package_dirs) }}
+      fail-fast: false
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Extract package name
+        id: package-info
+        run: |
+          PACKAGE_DIR="${{ matrix.package_dir }}"
+          PACKAGE_NAME=$(basename $PACKAGE_DIR)
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+      
+      - name: Upload package as artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatch-package-${{ steps.package-info.outputs.package_name }}
+          path: ${{ matrix.package_dir }}
+          retention-days: 1
+          if-no-files-found: error
+      
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
+          private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
+
+      - name: Trigger Validation Package Workflow in Registry
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          repository: CrackingShells/Hatch-Registry
+          event-type: validate-package
+          client-payload: |- 
+            {
+                "run_id": "${{ github.run_id }}",
+                "workflow_id": "${{ github.workflow }}",
+                "repository": "${{ github.repository }}",
+                "pr_number": "${{ github.event.pull_request.number }}",
+                "artifact_name": "hatch-package-${{ steps.package-info.outputs.package_name }}",
+                "package_name": "${{ steps.package-info.outputs.package_name }}"
+            }
