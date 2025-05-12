@@ -27,12 +27,12 @@ jobs:
           app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
           private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
 
-      - name: Trigger Add Package Workflow in Registry
+      - name: Trigger Validation Package Workflow in Registry
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ steps.generate-token.outputs.token }}
           repository: CrackingShells/Hatch-Registry
-          event-type: add-package
+          event-type: validate-package
           client-payload: |- 
             {
                 "run_id": "${{ github.run_id }}",
