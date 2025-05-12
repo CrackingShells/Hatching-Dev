@@ -1,4 +1,4 @@
-name: Package Upload Workflow
+name: Validate Package Workflow
 
 on:
   # This workflow can be triggered manually from the GitHub UI
