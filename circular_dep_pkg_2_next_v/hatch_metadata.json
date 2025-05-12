@@ -1,7 +1,7 @@
 {
   "name": "circular_dep_pkg_2",
-  "version": "1.0.0",
-  "description": "Second package with circular dependency for testing",
+  "version": "1.1.0",
+  "description": "New version of second package with actual  dependency to circular_dep_pkg_1, creating a circular dependency for testing",
   "category": "testing",
   "tags": ["test", "dependency", "circular"],
   "author": {
@@ -16,7 +16,12 @@
       "description": "Function from circular dependency package 2"
     }
   ],
-  "hatch_dependencies": [],
+  "hatch_dependencies": [
+    {
+      "name": "circular_dep_pkg_1",
+      "version": "1.0.0"
+    }
+  ],
   "python_dependencies": [],
   "citations": {
     "origin": "Circular dependency package 2 for testing",
