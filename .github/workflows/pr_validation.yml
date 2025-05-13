@@ -22,9 +22,10 @@ jobs:
         uses: dorny/paths-filter@v2
         with:
           list-files: json
+          base: ${{ github.event.before }}
           filters: |
             changes:
-              - '*/hatch_metadata.json'
+              - added|modified: '*/hatch_metadata.json'
       
       - name: Check for changes in multiple packages
         if: ${{ steps.detect-changed-paths.outputs.changes == 'true' }}
