@@ -22,7 +22,6 @@ jobs:
         uses: dorny/paths-filter@v2
         with:
           list-files: json
-          base: ${{ github.event.before }}
           filters: |
             changes:
               - added|modified: '*/hatch_metadata.json'
@@ -65,7 +64,7 @@ jobs:
             echo "package_name=$(echo "$UNIQUE_PACKAGES" | grep -v "^$")" >> $GITHUB_OUTPUT
           fi
   
-  validate-package:
+  send-package-for-validation:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.not_unique == 'false' && needs.detect-changes.outputs.package_name != '' }}
     runs-on: ubuntu-latest
