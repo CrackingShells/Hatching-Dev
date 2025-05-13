@@ -12,7 +12,7 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      multiple_packages: ${{ steps.check-multiple.outputs.multiple_packages }}
+      not_unique: ${{ steps.check-multiple.outputs.not_unique }}
       package_name: ${{ steps.check-multiple.outputs.package_name }} #only if a unique package is found
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +32,8 @@ jobs:
         id: check-multiple
         run: |
           # Extract base directories (package names) from the changed files using bash parameter expansion
-          CHANGED_FILES='${{ steps.detect-changed-paths.outputs.changes }}'
+          # 'changes_files' gives the list of changed files from filter `changes` in previous step
+          CHANGED_FILES='${{ steps.detect-changed-paths.outputs.changes_files }}' 
           PACKAGE_DIRS=()
           
           # Process each file path to extract package name using bash parameter expansion
@@ -51,12 +52,16 @@ jobs:
           echo "Total unique package directories: $PACKAGE_COUNT"
           
           # Set output if multiple packages were changed
-          if [ "$PACKAGE_COUNT" -gt 1 ]; then
-            echo "multiple_packages=true" >> $GITHUB_OUTPUT
-            echo "::error::PR contains changes to multiple packages: $UNIQUE_PACKAGES. Please submit separate PRs for each package."
+          if [ "$PACKAGE_COUNT" -ne 1 ]; then
+            echo "not_unique=true" >> $GITHUB_OUTPUT
+            if [ "$PACKAGE_COUNT" -gt 1 ]; then
+              echo "::error::PR contains changes to multiple packages: $UNIQUE_PACKAGES. Please submit separate PRs for each package."
+            else
+              echo "::error::PR contains no changes to any package. Please ensure you are modifying a valid package."
+            fi
             exit 1
           else
-            echo "multiple_packages=false" >> $GITHUB_OUTPUT
+            echo "not_unique=false" >> $GITHUB_OUTPUT
             echo "package_name=$(echo "$UNIQUE_PACKAGES" | grep -v "^$")" >> $GITHUB_OUTPUT
           fi
   
