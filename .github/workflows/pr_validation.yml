@@ -72,6 +72,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # Explicitly checkout the PR code
+          fetch-depth: 0 # Fetch all history to ensure we have the package files
       
       - name: Upload package as artifact
         id: upload-artifact
