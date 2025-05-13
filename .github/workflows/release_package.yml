@@ -1,0 +1,93 @@
+name: Release Package
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      package_dirs: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history to detect changes
+          
+      - name: Detect changed package directories
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          list-files: json
+          filters: |
+            changes:
+              - 'packages/*/**'
+  
+  create-release:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.package_dirs != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package_dir: ${{ fromJSON(needs.detect-changes.outputs.package_dirs) }}
+      fail-fast: false
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract package info
+        id: package-info
+        run: |
+          PACKAGE_DIR="${{ matrix.package_dir }}"
+          PACKAGE_NAME=$(basename $PACKAGE_DIR)
+          
+          # Extract version from metadata file (adapt based on your format)
+          if [ -f "$PACKAGE_DIR/metadata.json" ]; then
+            VERSION=$(jq -r .version $PACKAGE_DIR/metadata.json)
+          else
+            VERSION=$(date +%Y.%m.%d-%H%M)
+          fi
+          
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "release_name=${PACKAGE_NAME}-${VERSION}" >> $GITHUB_OUTPUT
+      
+      - name: Create release artifact
+        run: |
+          mkdir -p release-artifact
+          cp -r ${{ matrix.package_dir }}/* release-artifact/
+          cd release-artifact
+          zip -r ../${{ steps.package-info.outputs.release_name }}.zip .
+      
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
+          private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.package-info.outputs.release_name }}.zip
+          name: ${{ steps.package-info.outputs.release_name }}
+          tag_name: ${{ steps.package-info.outputs.package_name }}-v${{ steps.package-info.outputs.version }}
+          token: ${{ steps.generate-token.outputs.token }}
+      
+      - name: Trigger registry update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          repository: CrackingShells/Hatch-Registry
+          event-type: add-package
+          client-payload: |- 
+            {
+              "repository": "${{ github.repository }}",
+              "package_name": "${{ steps.package-info.outputs.package_name }}",
+              "version": "${{ steps.package-info.outputs.version }}",
+              "release_tag": "${{ steps.package-info.outputs.package_name }}-v${{ steps.package-info.outputs.version }}"
+            }

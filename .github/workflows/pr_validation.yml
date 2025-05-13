@@ -1,0 +1,100 @@
+name: Package PR Validation
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches:
+      - packages #only run on PRs to the packages branch
+    paths:
+      - '*/hatch_metadata.json' #only run on PRs that change hatch_metadata.json files, meaning any change leads to at least a version bump.
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      package_dirs: ${{ steps.filter.outputs.changes_files }}
+      multiple_packages_changed: ${{ steps.check-multiple.outputs.multiple_packages }}
+      package_name: ${{ steps.filter.outputs.package_name }} #only if a unique package is found
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed package directories
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          list-files: json
+          filters: |
+            changes:
+              - '*/hatch_metadata.json'
+      
+      - name: Check for changes in multiple packages
+        id: check-multiple
+        run: |
+          # Extract base directories (package names) from the changed files using bash parameter expansion
+          CHANGED_FILES='${{ steps.filter.outputs.changes_files }}'
+          PACKAGE_DIRS=()
+          
+          # Process each file path to extract package name using bash parameter expansion
+          for FILE in $(echo "$CHANGED_FILES" | jq -r '.[]'); do
+            # Extract package name (everything before the first slash)
+            PACKAGE=${FILE%%/*}
+            PACKAGE_DIRS+=("$PACKAGE")
+          done
+          
+          # Get unique package directories
+          UNIQUE_PACKAGES=$(printf "%s\n" "${PACKAGE_DIRS[@]}" | sort -u)
+          PACKAGE_COUNT=$(echo "$UNIQUE_PACKAGES" | grep -v "^$" | wc -l)
+          
+          echo "Package directories changed:"
+          echo "$UNIQUE_PACKAGES"
+          echo "Total unique package directories: $PACKAGE_COUNT"
+          
+          # Set output if multiple packages were changed
+          if [ "$PACKAGE_COUNT" -gt 1 ]; then
+            echo "multiple_packages=true" >> $GITHUB_OUTPUT
+            echo "::error::PR contains changes to multiple packages: $UNIQUE_PACKAGES. Please submit separate PRs for each package."
+            exit 1
+          else
+            echo "multiple_packages=false" >> $GITHUB_OUTPUT
+            echo "package_name=$(echo "$UNIQUE_PACKAGES" | grep -v "^$")" >> $GITHUB_OUTPUT
+          fi
+  
+  validate-package:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.multiple_packages_changed == 'false' && needs.detect-changes.outputs.package_dirs != '[]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Upload package as artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatch-package-${{ steps.check-multiple.outputs.package_name }}
+          path: ${{ steps.package-info.outputs.package_dir }}
+          retention-days: 1
+          if-no-files-found: error
+      
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
+          private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
+
+      - name: Trigger Validation Package Workflow in Registry
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          repository: CrackingShells/Hatch-Registry
+          event-type: validate-package
+          client-payload: |- 
+            {
+                "run_id": "${{ github.run_id }}",
+                "workflow_id": "${{ github.workflow }}",
+                "repository": "${{ github.repository }}",
+                "pr_number": "${{ github.event.pull_request.number }}",
+                "artifact_name": "hatch-package-${{ steps.check-multiple.outputs.package_name }}",
+                "package_name": "${{ steps.check-multiple.outputs.package_name }}"
+            }
