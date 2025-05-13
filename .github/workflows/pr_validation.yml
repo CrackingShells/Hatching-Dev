@@ -12,9 +12,8 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      package_dirs: ${{ steps.detect-changed-paths.outputs.changed_files }}
-      multiple_packages_changed: ${{ steps.check-multiple.outputs.multiple_packages }}
-      package_name: ${{ steps.detect-changed-paths.outputs.package_name }} #only if a unique package is found
+      multiple_packages: ${{ steps.check-multiple.outputs.multiple_packages }}
+      package_name: ${{ steps.check-multiple.outputs.package_name }} #only if a unique package is found
     steps:
       - uses: actions/checkout@v4
 
@@ -23,15 +22,17 @@ jobs:
         uses: dorny/paths-filter@v2
         with:
           list-files: json
+          base: ${{ github.event.before }}
           filters: |
             changes:
-              - '*/hatch_metadata.json'
+              - added|modified: '*/hatch_metadata.json'
       
       - name: Check for changes in multiple packages
+        if: ${{ steps.detect-changed-paths.outputs.changes == 'true' }}
         id: check-multiple
         run: |
           # Extract base directories (package names) from the changed files using bash parameter expansion
-          CHANGED_FILES='${{ steps.detect-changed-paths.outputs.changed_files }}'
+          CHANGED_FILES='${{ steps.detect-changed-paths.outputs.changes }}'
           PACKAGE_DIRS=()
           
           # Process each file path to extract package name using bash parameter expansion
@@ -61,7 +62,7 @@ jobs:
   
   validate-package:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.multiple_packages_changed == 'false' && needs.detect-changes.outputs.package_dirs != '[]' }}
+    if: ${{ needs.detect-changes.outputs.multiple_packages == 'false' && needs.detect-changes.outputs.package_name != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,8 +72,8 @@ jobs:
         id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hatch-package-${{ steps.check-multiple.outputs.package_name }}
-          path: "./${{ steps.check-multiple.outputs.package_name }}"
+          name: hatch-package-${{ needs.detect-changes.outputs.package_name }}
+          path: "./${{ needs.detect-changes.outputs.package_name }}"
           retention-days: 1
           if-no-files-found: error
       
@@ -95,6 +96,6 @@ jobs:
                 "workflow_id": "${{ github.workflow }}",
                 "repository": "${{ github.repository }}",
                 "pr_number": "${{ github.event.pull_request.number }}",
-                "artifact_name": "hatch-package-${{ steps.check-multiple.outputs.package_name }}",
-                "package_name": "${{ steps.check-multiple.outputs.package_name }}"
+                "artifact_name": "hatch-package-${{ needs.detect-changes.outputs.package_name }}",
+                "package_name": "${{ needs.detect-changes.outputs.package_name }}"
             }
