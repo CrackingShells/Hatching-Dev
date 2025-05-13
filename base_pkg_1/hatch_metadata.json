@@ -1,6 +1,6 @@
 {
   "name": "base_pkg_1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Base package with no dependencies for testing",
   "category": "testing",
   "tags": ["test", "base"],
