@@ -67,7 +67,7 @@ jobs:
   
   validate-package:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.multiple_packages == 'false' && needs.detect-changes.outputs.package_name != '' }}
+    if: ${{ needs.detect-changes.outputs.not_unique == 'false' && needs.detect-changes.outputs.package_name != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
