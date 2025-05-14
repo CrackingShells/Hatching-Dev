@@ -1,14 +1,16 @@
 {
+  "package_schema_version": "1.1.0",
   "name": "base_pkg_1",
   "version": "1.0.0",
   "description": "Base package with no dependencies for testing",
-  "category": "testing",
   "tags": ["test", "base"],
   "author": {
     "name": "Test User",
     "email": "test@example.com"
   },
-  "license": "MIT",
+  "license": {
+    "name": "MIT"
+  },
   "entry_point": "server.py",
   "tools": [
     {
