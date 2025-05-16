@@ -1,0 +1,227 @@
+name: Package Release Process
+
+on:
+  repository_dispatch:
+    types: [release-package]
+
+jobs:
+  # Auto-merge if validation passed
+  auto-merge-if-validation-passed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
+          private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
+      
+      - name: Check PR for conflicts
+        id: check-conflicts
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const repository = '${{ github.repository }}';
+            const [owner, repo] = repository.split('/');
+            const prNumber = ${{ github.event.client_payload.pr_number }};
+
+            const pr = await github.rest.pulls.get({
+              owner: owner,
+              repo: repo,
+              pull_number: prNumber
+            });
+            
+            if (pr.data.mergeable === false) {
+              console.log('PR has conflicts that need to be resolved');
+              await github.rest.issues.createComment({
+                owner: owner,
+                repo: repo,
+                issue_number: prNumber,
+                body: '⚠️ This PR has merge conflicts that need to be resolved before it can be auto-merged. Please resolve the conflicts and try again.'
+              });
+              return { can_merge: false };
+            }
+            
+            console.log('PR is ready to be merged');
+            
+            // Add the automerge label
+            await github.rest.issues.addLabels({
+              owner: owner,
+              repo: repo,
+              issue_number: prNumber,
+              labels: ['automerge']
+            });
+            
+            return { can_merge: true };
+      
+      - name: Notify PR author of success
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const message = [
+              "✅ ### All validation passed",
+              "",
+              "No conflicts were detected. This PR will be auto-approved and auto-merged shortly.",
+              "",
+              "### Next Steps",
+              "",
+              "1. The package will be released to the registry under the lowest trust level: unreviewed.",
+              "2. The package will be available for download from the Hatch! package manager.",
+              "3. A review issue will be created in the repository. Package authors are encouraged to check the review issue and respond to any questions or concerns raised by the reviewers.",
+              "4. Once the review is complete, the package's trust level will be raised to: reviewed.",
+
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            })
+
+      - name: Auto-approve PR
+        uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+      
+      - name: Auto-merge PR
+        uses: pascalgn/automerge-action@v0.16.4
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          MERGE_METHOD: merge
+          MERGE_LABELS: "validation-passed,automerge"
+          MERGE_REMOVE_LABELS: "validation-passed,automerge"
+          MERGE_FORKS: true
+
+  # 3. Create Release and Review Issue
+  create-release-and-review:
+    needs: [auto-merge-if-validation-passed]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.HATCH_WORKFLOW_APP_ID }}
+          private_key: ${{ secrets.HATCH_WORKFLOW_APP_PRIVATE_KEY }}
+
+      # Retrieve the original artifact of the package used to be validated by the registry
+      - name: Retrieve package artifact
+        id: retrieve-artifact
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          workflow: ${{ github.event.client_payload.workflow_id }}
+          run_id: ${{ github.event.client_payload.run_id }}
+          name: ${{ github.event.client_payload.artifact_name }}
+          repo: ${{ github.repository }}
+          path: downloaded-package
+
+      - name: Extract package info
+        id: package-info
+        run: |
+          
+          # Extract version from metadata file (adapt based on your format)
+          VERSION=$(jq -r .version downloaded-package/hatch_metadata.json)
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "release_name=${{ github.event.client_payload.package_name }}-v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create release artifact
+        run: |
+          cd downloaded-package
+          zip -r ../${{ steps.package-info.outputs.release_name }}.zip .
+
+      # Create GitHub Release
+      - name: Create GitHub Release
+        id: create-release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.package-info.outputs.release_name }}.zip
+          name: ${{ steps.package-info.outputs.release_name }}
+          token: ${{ steps.generate-token.outputs.token }}
+
+      # Retrieve PR author information
+      - name: Retrieve PR author information
+        id: author-info
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const prNumber = ${{ github.event.client_payload.pr_number }};
+            const [owner, repo] = '${{ github.repository }}'.split('/');
+
+            const pr = await github.rest.pulls.get({
+              owner: owner,
+              repo: repo,
+              pull_number: prNumber
+            });
+
+            core.setOutput("author_id", pr.data.user.login);
+            core.setOutput("author_email", pr.data.user.email || pr.data.user.login + "@not-provided.com");
+
+      # Trigger registry update with package details including author info
+      - name: Trigger registry update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          repository: CrackingShells/Hatch-Registry
+          event-type: add-package
+          client-payload: |- 
+            {
+              "repository": "${{ github.repository }}",
+              "package_name": "${{ github.event.client_payload.package_name }}",
+              "workflow_id": "${{ github.event.client_payload.workflow_id }}",
+              "run_id": "${{ github.event.client_payload.run_id }}",
+              "artifact_name": "${{ github.event.client_payload.artifact_name }}",
+              "author": {
+                "GitHubID": "${{ steps.author-info.outputs.author_id }}",
+                "email": "${{ steps.author-info.outputs.author_email }}"
+              },
+              "version": "${{ steps.package-info.outputs.version }}"
+            }
+
+      # Create review issue in the Registry repository
+      - name: Create review issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const package_name = "${{ github.event.client_payload.package_name }}";
+            const version = "${{ steps.package-info.outputs.version }}";
+            const author_id = "${{ steps.author-info.outputs.author_id }}";
+            const release_url = "${{ steps.create-release.outputs.url }}";
+            
+            await github.rest.issues.create({
+              owner: "CrackingShells",
+              repo: "Hatch-Registry",
+              title: `Package Review: ${package_name} v${version}`,
+              body: `## Package Review Needed
+
+            - **Package:** ${package_name}
+            - **Version:** ${version}
+            - **Author:** @${author_id}
+            - **Release:** ${release_url}
+            - **PR:** https://github.com/${{ github.repository }}/pull/${{ github.event.client_payload.pr_number }}
+
+            Please review this package for quality and security concerns.
+            Once reviewed, update the trust level using the registry update tool.
+
+            ### Review Checklist
+
+            - [ ] Code quality and readability
+            - [ ] Functionality and performance
+            - [ ] Security concerns
+            - [ ] Documentation completeness
+            - [ ] License compliance
+            `,
+              labels: ['ready-for-review', 'package']
+            });
