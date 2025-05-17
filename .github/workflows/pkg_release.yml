@@ -153,9 +153,9 @@ jobs:
         with:
           files: ${{ steps.package-info.outputs.release_name }}.zip
           name: ${{ steps.package-info.outputs.release_name }}
+          tag_name: ${{ steps.package-info.outputs.release_name }}
           token: ${{ steps.generate-token.outputs.token }}
 
-      # Retrieve PR author information
       - name: Retrieve PR author information
         id: author-info
         uses: actions/github-script@v7
