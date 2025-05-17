@@ -77,10 +77,13 @@ jobs:
 
             ].join('\n');
 
+            const prNumber = ${{ github.event.client_payload.pr_number }};
+            const [owner, repo] = '${{ github.repository }}'.split('/');
+            
             await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              issue_number: prNumber,
+              owner: owner,
+              repo: repo,
               body: message
             })
 
