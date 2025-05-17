@@ -158,7 +158,7 @@ jobs:
             const version = "${{ steps.package-info.outputs.version }}";
             const author_id = "${{ steps.author-info.outputs.author_id }}";
             const release_url = "${{ steps.create-release.outputs.url }}";
-            const repository = '${{ github.event.client_payload.repository }}'
+            const repository = '${{ github.repository }}'
             const [owner, repo] = repository.split('/');
             
             await github.rest.issues.create({
