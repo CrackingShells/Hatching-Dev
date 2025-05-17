@@ -64,15 +64,16 @@ jobs:
           github-token: ${{ steps.generate-token.outputs.token }}
           script: |
             const message = [
-              "✅ ### All validation passed",
+              "### ✅ No conflicts detected.",
               "",
-              "No conflicts were detected. This PR will be auto-approved and auto-merged shortly.",
+              "This PR will be auto-approved and auto-merged shortly.",
               "",
               "### Next Steps",
               "",
               "1. The package will be released to the registry under the lowest trust level: unreviewed.",
               "2. The package will be available for download from the Hatch! package manager.",
-              "3. A review issue will be created in the repository. Package authors are encouraged to check the review issue and respond to any questions or concerns raised by the reviewers.",
+              "3. A review issue will be created in the [repository](https://github.com/${{ github.repository }}/issues) for this package.",
+              "  - Package authors are encouraged to check the review issue and respond to any questions or concerns raised by the reviewers.",
               "4. Once the review is complete, the package's trust level will be raised to: reviewed.",
 
             ].join('\n');
@@ -91,6 +92,7 @@ jobs:
         uses: hmarr/auto-approve-action@v4
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
+          pull-request-number: ${{ github.event.client_payload.pr_number }}
       
       - name: Auto-merge PR
         uses: pascalgn/automerge-action@v0.16.4
@@ -100,6 +102,7 @@ jobs:
           MERGE_LABELS: "validation-passed,automerge"
           MERGE_REMOVE_LABELS: "validation-passed,automerge"
           MERGE_FORKS: true
+          PULL_REQUEST: ${{ github.event.client_payload.pr_number }}
 
   # 3. Create Release and Review Issue
   create-release-and-review:
