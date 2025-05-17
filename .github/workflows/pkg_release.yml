@@ -91,6 +91,7 @@ jobs:
         uses: hmarr/auto-approve-action@v4
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
+          pull-request-number: ${{ github.event.client_payload.pr_number }}
       
       - name: Auto-merge PR
         uses: pascalgn/automerge-action@v0.16.4
@@ -100,6 +101,7 @@ jobs:
           MERGE_LABELS: "validation-passed,automerge"
           MERGE_REMOVE_LABELS: "validation-passed,automerge"
           MERGE_FORKS: true
+          PULL_REQUEST: ${{ github.event.client_payload.pr_number }}
 
   # 3. Create Release and Review Issue
   create-release-and-review:
