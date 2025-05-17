@@ -158,11 +158,12 @@ jobs:
             const version = "${{ steps.package-info.outputs.version }}";
             const author_id = "${{ steps.author-info.outputs.author_id }}";
             const release_url = "${{ steps.create-release.outputs.url }}";
-            const [owner, repo] = '${{ github.repository }}'.split('/');
+            const repository = '${{ github.event.client_payload.repository }}'
+            const [owner, repo] = repository.split('/');
             
             await github.rest.issues.create({
-              owner: "CrackingShells",
-              repo: ${repo},
+              owner: owner,
+              repo: repo,
               title: `Package Review: ${package_name} v${version}`,
               body: `## Package Review Needed
 
