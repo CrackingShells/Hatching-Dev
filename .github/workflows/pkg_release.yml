@@ -158,10 +158,11 @@ jobs:
             const version = "${{ steps.package-info.outputs.version }}";
             const author_id = "${{ steps.author-info.outputs.author_id }}";
             const release_url = "${{ steps.create-release.outputs.url }}";
+            const [owner, repo] = '${{ github.repository }}'.split('/');
             
             await github.rest.issues.create({
               owner: "CrackingShells",
-              repo: "Hatch-Registry",
+              repo: ${repo},
               title: `Package Review: ${package_name} v${version}`,
               body: `## Package Review Needed
 
