@@ -1,4 +1,4 @@
-from mcp_utils.hatch_mcp import HatchMCP
+from hatchling import HatchMCP
 
 # Initialize MCP server with metadata
 hatch_mcp = HatchMCP("base_pkg_1",
