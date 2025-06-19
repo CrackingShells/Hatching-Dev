@@ -1,0 +1,30 @@
+{
+  "package_schema_version": "1.2.0",
+  "name": "version_dep_pkg",
+  "version": "1.1.0",
+  "description": "Package with a version-specific dependency for testing",
+  "tags": ["test", "dependency", "version"],
+  "author": {
+    "name": "Test User",
+    "email": "test@example.com"
+  },
+  "license": {
+    "name": "MIT"
+  },
+  "entry_point": "server.py",
+  "tools": [
+    {"name": "version_specific_function", "description": "Function that depends on a specific version of base_pkg_1"}
+  ],
+  "dependencies": {
+    "hatch": [
+      {"name": "base_pkg_1", "version_constraint": "==1.0.0"}
+    ],
+    "python": [],
+    "system": [],
+    "docker": []
+  },
+  "citations": {
+    "origin": "Version dependency package for testing",
+    "mcp": "Version dependency package MCP implementation"
+  }
+}

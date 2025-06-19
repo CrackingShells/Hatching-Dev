@@ -1,0 +1,30 @@
+{
+  "package_schema_version": "1.2.0",
+  "name": "docker_dep_pkg",
+  "version": "1.0.0",
+  "description": "Dummy package to test docker dependencies in Hatch MCP.",
+  "tags": ["test", "docker", "dependency"],
+  "author": {
+    "name": "Test User",
+    "email": "test@example.com"
+  },
+  "license": {
+    "name": "MIT"
+  },
+  "entry_point": "server.py",
+  "tools": [
+    {"name": "docker_check", "description": "Dummy tool that claims to require a docker image (e.g., nginx)."}
+  ],
+  "dependencies": {
+    "hatch": [],
+    "python": [],
+    "system": [],
+    "docker": [
+      {"name": "nginx", "version_constraint": ">=1.25.0", "registry": "dockerhub"}
+    ]
+  },
+  "citations": {
+    "origin": "Docker dependency package for testing",
+    "mcp": "Docker dependency package MCP implementation"
+  }
+}

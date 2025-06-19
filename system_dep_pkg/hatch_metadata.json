@@ -1,0 +1,30 @@
+{
+  "package_schema_version": "1.2.0",
+  "name": "system_dep_pkg",
+  "version": "1.0.0",
+  "description": "Dummy package to test system dependencies in Hatch MCP.",
+  "tags": ["test", "system", "dependency"],
+  "author": {
+    "name": "Test User",
+    "email": "test@example.com"
+  },
+  "license": {
+    "name": "MIT"
+  },
+  "entry_point": "server.py",
+  "tools": [
+    {"name": "system_check", "description": "Dummy tool that claims to require a system package (e.g., curl)."}
+  ],
+  "dependencies": {
+    "hatch": [],
+    "python": [],
+    "system": [
+      {"name": "curl", "version_constraint": ">=7.0.0", "package_manager": "apt"}
+    ],
+    "docker": []
+  },
+  "citations": {
+    "origin": "System dependency package for testing",
+    "mcp": "System dependency package MCP implementation"
+  }
+}
