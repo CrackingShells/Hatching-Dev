@@ -17,7 +17,7 @@
   ],
   "dependencies": {
     "hatch": [
-      {"name": "base_pkg_1", "version_constraint": "==1.0.0"}
+      {"name": "base_pkg_1", "version_constraint": "==1.4.0"}
     ],
     "python": [],
     "system": [],
