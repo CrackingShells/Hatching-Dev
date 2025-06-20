@@ -1,0 +1,30 @@
+{
+  "package_schema_version": "1.2.0",
+  "name": "circular_dep_pkg_2",
+  "version": "2.1.0",
+  "description": "Second package with circular dependency for testing",
+  "tags": ["test", "dependency", "circular"],
+  "author": {
+    "name": "Test User",
+    "email": "test@example.com"
+  },
+  "license": {
+    "name": "MIT"
+  },
+  "entry_point": "server.py",
+  "tools": [
+    {"name": "circular_function_2", "description": "Function from circular dependency package 2"}
+  ],
+  "dependencies": {
+    "hatch": [
+      {"name": "circular_dep_pkg_1", "version_constraint": ">=1.1.0"}
+    ],
+    "python": [],
+    "system": [],
+    "docker": []
+  },
+  "citations": {
+    "origin": "Circular dependency package 2 for testing",
+    "mcp": "Circular dependency package 2 MCP implementation"
+  }
+}

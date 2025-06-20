@@ -1,0 +1,18 @@
+{
+    "package_schema_version": "1.2.0",
+    "name": "local_path_dep_pkg",
+    "version": "1.0.0",
+    "entry_point": "server.py",
+    "description": "Dummy package with a local path dependency for v1.2.0 schema testing.",
+    "tags": ["test", "local", "dependency"],
+    "author": {"name": "Test Author"},
+    "license": {"name": "MIT"},
+    "dependencies": {
+        "hatch": [
+            {
+                "name": "../base_pkg_1_2_0",
+                "version_constraint": ">=1.2.0"
+            }
+        ]
+    }
+}
