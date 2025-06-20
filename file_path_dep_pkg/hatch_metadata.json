@@ -1,0 +1,18 @@
+{
+    "package_schema_version": "1.2.0",
+    "name": "file_path_dep_pkg",
+    "version": "1.0.0",
+    "entry_point": "server.py",
+    "description": "Dummy package with a local dependency that is a file, not a directory.",
+    "tags": ["test", "fail", "local"],
+    "author": {"name": "Test Author"},
+    "license": {"name": "MIT"},
+    "dependencies": {
+        "hatch": [
+            {
+                "name": "../some_file.txt",
+                "version_constraint": ">=1.0.0"
+            }
+        ]
+    }
+}

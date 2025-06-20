@@ -1,0 +1,18 @@
+{
+    "package_schema_version": "1.2.0",
+    "name": "nonexistent_repo_dep_pkg",
+    "version": "1.0.0",
+    "entry_point": "server.py",
+    "description": "Dummy package with a dependency on a non-existent repository prefix.",
+    "tags": ["test", "fail", "repo"],
+    "author": {"name": "Test Author"},
+    "license": {"name": "MIT"},
+    "dependencies": {
+        "hatch": [
+            {
+                "name": "ghostrepo:base_pkg_1_2_0",
+                "version_constraint": ">=1.2.0"
+            }
+        ]
+    }
+}
