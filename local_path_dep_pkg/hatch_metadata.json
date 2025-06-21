@@ -12,6 +12,10 @@
             {
                 "name": "../base_pkg_1_2_0",
                 "version_constraint": ">=1.2.0"
+            },
+            {
+                "name": "../simple_dep_pkg_1_1_0",
+                "version_constraint": ">=1.1.0"
             }
         ]
     }
