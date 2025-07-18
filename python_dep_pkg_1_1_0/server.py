@@ -1,5 +1,5 @@
 import requests  # This would be the Python dependency
-from mcp_utils.hatch_mcp import HatchMCP
+from hatch_mcp_server import HatchMCP
 
 # Initialize MCP server with metadata
 hatch_mcp = HatchMCP("python_dep_pkg",

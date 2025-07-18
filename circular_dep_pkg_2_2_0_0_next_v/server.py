@@ -1,4 +1,4 @@
-from mcp_utils.hatch_mcp import HatchMCP
+from hatch_mcp_server import HatchMCP
 
 # Initialize MCP server with metadata
 hatch_mcp = HatchMCP("circular_dep_pkg_2",

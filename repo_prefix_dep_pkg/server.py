@@ -1,5 +1,5 @@
 """repo_prefix_dep_pkg: Dummy Hatch package for testing repo prefix dependencies."""
-from mcp_utils.hatch_mcp import HatchMCP
+from hatch_mcp_server import HatchMCP
 
 # Initialize MCP server with metadata
 hatch_mcp = HatchMCP("repo_prefix_dep_pkg",

@@ -1,4 +1,4 @@
-from mcp_utils.hatch_mcp import HatchMCP
+from hatch_mcp_server import HatchMCP
 
 hatch_mcp = HatchMCP("ArithmeticTools",
                 origin_citation="Jacopin Eliott, \"Origin: Example MCP Server for Hatch!\", April 2025",

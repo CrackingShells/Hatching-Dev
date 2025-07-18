@@ -1,4 +1,4 @@
-from mcp_utils.hatch_mcp import HatchMCP
+from hatch_mcp_server import HatchMCP
 
 hatch_mcp = HatchMCP("docker_dep_pkg",
                 origin_citation="Docker dependency package for testing",
